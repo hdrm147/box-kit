@@ -36,7 +36,7 @@
                 <div v-if="currentSelectedBox" class="bk-selected-info" :class="{ 'bk-perfect-fit-info': showPerfectFit }">
                     <div class="bk-selected-name">{{ currentSelectedBox.name }}</div>
                     <div class="bk-selected-dims">{{ currentSelectedBox.w }}×{{ currentSelectedBox.d }}×{{ currentSelectedBox.h }} cm</div>
-                    <div class="bk-selected-price" v-if="!showPerfectFit">{{ getBoxPrice(currentSelectedBox) }} IQD/25</div>
+                    <div class="bk-selected-price" v-if="!showPerfectFit">{{ getBoxPriceFormatted(currentSelectedBox) }} IQD/25</div>
                 </div>
 
                 <!-- Perfect Box Mode Note -->
@@ -163,7 +163,7 @@ import PaddingControl from './PaddingControl.vue'
 import Visualization3D from './Visualization3D.vue'
 import { getBoxes } from '../../data/suppliers'
 import { packItems, countOverflow } from '../../utils/packingAlgorithm'
-import { formatPrice, getBoxPrice as getBoxPriceFn } from '../../utils/pricingFunctions'
+import { formatPrice, getBoxPrice } from '../../utils/pricingFunctions'
 import { rankBoxes } from '../../utils/boxFitting'
 import { findOptimalBoxing, formatCost } from '../../utils/multiBoxOptimizer'
 
@@ -372,14 +372,14 @@ export default {
             })
         },
 
-        getBoxPrice(box) {
+        getBoxPriceFormatted(box) {
             if (!box?.prices) return '-'
-            return formatPrice(getBoxPriceFn(box, 25))
+            return formatPrice(getBoxPrice(box, 25))
         },
 
         formatBoxPrice(box) {
             if (!box?.prices) return '-'
-            const price = getBoxPriceFn(box, 25)
+            const price = getBoxPrice(box, 25)
             return `${Math.round(price / 1000)}K`
         },
 
