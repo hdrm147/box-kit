@@ -58414,27 +58414,42 @@ function checkBoxFit(box, items) {
 function rankBoxes(boxes, items) {
   var padding = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
   if (!items.length) return [];
+
+  // Calculate total item volume for efficiency calculation
+  var _calculateTotalVolume2 = calculateTotalVolume(items),
+    totalVol = _calculateTotalVolume2.totalVol;
   var scoredBoxes = boxes.map(function (box) {
-    var fit = checkBoxFit(box, items, padding);
     var placements = (0,_packingAlgorithm__WEBPACK_IMPORTED_MODULE_0__.packItems)(items, box, padding);
     var actuallyFits = (0,_packingAlgorithm__WEBPACK_IMPORTED_MODULE_0__.allItemsFit)(placements);
+
+    // Calculate actual efficiency based on packing result
+    var availW = box.w - padding * 2;
+    var availH = box.h - padding * 2;
+    var availD = box.d - padding * 2;
+    var boxVol = availW * availH * availD;
+    var efficiency = boxVol > 0 ? totalVol / boxVol * 100 : 0;
     return {
       box: box,
-      fit: fit,
+      fit: {
+        efficiency: efficiency,
+        spaceUsage: efficiency
+      },
       actuallyFits: actuallyFits,
       placements: placements,
-      score: actuallyFits ? fit.efficiency > 30 ? 150 - fit.efficiency : 50 - fit.efficiency : -1000
+      boxVolume: box.w * box.h * box.d
     };
   });
 
-  // Sort: fitting boxes first (by efficiency desc), then non-fitting
+  // Sort: fitting boxes first, then by SMALLEST volume (tightest fit)
   scoredBoxes.sort(function (a, b) {
     if (a.actuallyFits && !b.actuallyFits) return -1;
     if (!a.actuallyFits && b.actuallyFits) return 1;
     if (a.actuallyFits && b.actuallyFits) {
-      return b.fit.efficiency - a.fit.efficiency;
+      // Smaller box = better (higher efficiency means tighter fit)
+      return a.boxVolume - b.boxVolume;
     }
-    return 0;
+    // For non-fitting boxes, show smaller ones first (closer to fitting)
+    return a.boxVolume - b.boxVolume;
   });
   return scoredBoxes;
 }

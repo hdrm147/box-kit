@@ -88,28 +88,39 @@ export function checkBoxFit(box, items, padding = 0) {
 export function rankBoxes(boxes, items, padding = 0) {
     if (!items.length) return []
 
+    // Calculate total item volume for efficiency calculation
+    const { totalVol } = calculateTotalVolume(items)
+
     const scoredBoxes = boxes.map(box => {
-        const fit = checkBoxFit(box, items, padding)
         const placements = packItems(items, box, padding)
         const actuallyFits = allItemsFit(placements)
 
+        // Calculate actual efficiency based on packing result
+        const availW = box.w - padding * 2
+        const availH = box.h - padding * 2
+        const availD = box.d - padding * 2
+        const boxVol = availW * availH * availD
+        const efficiency = boxVol > 0 ? (totalVol / boxVol) * 100 : 0
+
         return {
             box,
-            fit,
+            fit: { efficiency, spaceUsage: efficiency },
             actuallyFits,
             placements,
-            score: actuallyFits ? (fit.efficiency > 30 ? 150 - fit.efficiency : 50 - fit.efficiency) : -1000
+            boxVolume: box.w * box.h * box.d
         }
     })
 
-    // Sort: fitting boxes first (by efficiency desc), then non-fitting
+    // Sort: fitting boxes first, then by SMALLEST volume (tightest fit)
     scoredBoxes.sort((a, b) => {
         if (a.actuallyFits && !b.actuallyFits) return -1
         if (!a.actuallyFits && b.actuallyFits) return 1
         if (a.actuallyFits && b.actuallyFits) {
-            return b.fit.efficiency - a.fit.efficiency
+            // Smaller box = better (higher efficiency means tighter fit)
+            return a.boxVolume - b.boxVolume
         }
-        return 0
+        // For non-fitting boxes, show smaller ones first (closer to fitting)
+        return a.boxVolume - b.boxVolume
     })
 
     return scoredBoxes
