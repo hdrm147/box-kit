@@ -79,49 +79,36 @@
 
         <!-- Multi-Box Optimizer -->
         <div v-if="multiBoxResult && multiBoxResult.optimal" class="bk-optimizer-section">
-            <div class="bk-optimizer-header">
-                <span class="bk-optimizer-title">📦 Optimal Boxing</span>
-                <span class="bk-optimizer-summary">
-                    {{ multiBoxResult.optimal.numBoxes }} box{{ multiBoxResult.optimal.numBoxes > 1 ? 'es' : '' }}
-                    • {{ formatOptimalCost(multiBoxResult.optimal.totalBoxCost) }} IQD
-                </span>
-            </div>
-
-            <!-- Optimal Solution -->
-            <div class="bk-optimal-solution">
-                <div
-                    v-for="(assignment, idx) in multiBoxResult.optimal.assignments"
-                    :key="idx"
-                    class="bk-solution-box"
-                    :class="{ 'bk-solution-selected': isAssignmentSelected(assignment) }"
-                    @click="selectAssignment(assignment)"
-                >
-                    <div class="bk-solution-box-header">
+            <div class="bk-optimizer-row">
+                <div class="bk-optimizer-label">Optimal</div>
+                <div class="bk-optimizer-value">
+                    <div
+                        v-for="(assignment, idx) in multiBoxResult.optimal.assignments"
+                        :key="idx"
+                        class="bk-solution-box"
+                        :class="{ 'bk-solution-selected': isAssignmentSelected(assignment) }"
+                        @click="selectAssignment(assignment)"
+                    >
                         <span class="bk-solution-box-name">{{ assignment.box.name }}</span>
                         <span class="bk-solution-box-price">{{ formatOptimalCost(assignment.boxCost) }}</span>
-                    </div>
-                    <div class="bk-solution-box-dims">{{ assignment.box.w }}×{{ assignment.box.d }}×{{ assignment.box.h }} cm</div>
-                    <div class="bk-solution-items">
-                        <div v-for="item in assignment.itemSummary" :key="item.name" class="bk-solution-item">
-                            <span class="bk-solution-item-color" :style="{ background: item.color || '#94a3b8' }"></span>
-                            <span class="bk-solution-item-name">{{ item.name }}</span>
-                            <span class="bk-solution-item-qty">×{{ item.qty }}</span>
-                        </div>
+                        <span class="bk-solution-box-items">
+                            <span v-for="item in assignment.itemSummary" :key="item.name" class="bk-solution-item">
+                                <span class="bk-solution-item-color" :style="{ background: item.color || '#94a3b8' }"></span>
+                                {{ item.name }} ×{{ item.qty }}
+                            </span>
+                        </span>
                     </div>
                 </div>
+                <div class="bk-optimizer-total">{{ formatOptimalCost(multiBoxResult.optimal.totalBoxCost) }} IQD</div>
             </div>
-
-            <!-- Alternatives -->
-            <div v-if="multiBoxResult.alternatives.length > 0" class="bk-alternatives">
-                <div class="bk-alternatives-label">Alternatives:</div>
-                <div class="bk-alternatives-list">
+            <div v-if="multiBoxResult.alternatives.length > 0" class="bk-optimizer-row bk-alt-row">
+                <div class="bk-optimizer-label">Alt</div>
+                <div class="bk-optimizer-value bk-alt-chips">
                     <span
                         v-for="(alt, idx) in multiBoxResult.alternatives"
                         :key="idx"
-                        class="bk-alternative-chip"
-                    >
-                        {{ alt.numBoxes }} box{{ alt.numBoxes > 1 ? 'es' : '' }}: +{{ alt.costDiffPercent }}%
-                    </span>
+                        class="bk-alt-chip"
+                    >{{ alt.numBoxes }}box +{{ alt.costDiffPercent }}%</span>
                 </div>
             </div>
         </div>
