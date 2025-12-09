@@ -34,11 +34,21 @@
                 />
                 <!-- Selected Box Info Overlay -->
                 <div v-if="currentSelectedBox" class="bk-selected-info" :class="{ 'bk-perfect-fit-info': showPerfectFit }">
-                    <div v-if="showPerfectFit" class="bk-pf-badge">⚡ TEST MODE</div>
                     <div class="bk-selected-name">{{ currentSelectedBox.name }}</div>
                     <div class="bk-selected-dims">{{ currentSelectedBox.w }}×{{ currentSelectedBox.d }}×{{ currentSelectedBox.h }} cm</div>
                     <div class="bk-selected-price" v-if="!showPerfectFit">{{ getBoxPrice(currentSelectedBox) }} IQD/25</div>
-                    <div class="bk-selected-price bk-test-price" v-else>Custom test box</div>
+                </div>
+
+                <!-- Perfect Box Mode Note -->
+                <div v-if="showPerfectFit && perfectFitBox" class="bk-perfect-note">
+                    <div class="bk-perfect-note-title">⚡ Perfect Box Mode</div>
+                    <div class="bk-perfect-note-text">
+                        These items fit within a <strong>{{ perfectFitBox.w }}×{{ perfectFitBox.d }}×{{ perfectFitBox.h }} cm</strong> box.
+                        <br/>This is the minimum theoretical size — not available from suppliers.
+                    </div>
+                    <div class="bk-perfect-note-hint">
+                        Closest available: <strong>{{ closestRealBox?.name || 'None' }}</strong>
+                    </div>
                 </div>
             </div>
 
