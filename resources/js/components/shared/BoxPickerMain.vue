@@ -77,10 +77,59 @@
             </div>
         </div>
 
-        <!-- Box Recommendations (Compact Horizontal) -->
+        <!-- Multi-Box Optimizer -->
+        <div v-if="multiBoxResult && multiBoxResult.optimal" class="bk-optimizer-section">
+            <div class="bk-optimizer-header">
+                <span class="bk-optimizer-title">📦 Optimal Boxing</span>
+                <span class="bk-optimizer-summary">
+                    {{ multiBoxResult.optimal.numBoxes }} box{{ multiBoxResult.optimal.numBoxes > 1 ? 'es' : '' }}
+                    • {{ formatOptimalCost(multiBoxResult.optimal.totalBoxCost) }} IQD
+                </span>
+            </div>
+
+            <!-- Optimal Solution -->
+            <div class="bk-optimal-solution">
+                <div
+                    v-for="(assignment, idx) in multiBoxResult.optimal.assignments"
+                    :key="idx"
+                    class="bk-solution-box"
+                    :class="{ 'bk-solution-selected': isAssignmentSelected(assignment) }"
+                    @click="selectAssignment(assignment)"
+                >
+                    <div class="bk-solution-box-header">
+                        <span class="bk-solution-box-name">{{ assignment.box.name }}</span>
+                        <span class="bk-solution-box-price">{{ formatOptimalCost(assignment.boxCost) }}</span>
+                    </div>
+                    <div class="bk-solution-box-dims">{{ assignment.box.w }}×{{ assignment.box.d }}×{{ assignment.box.h }} cm</div>
+                    <div class="bk-solution-items">
+                        <div v-for="item in assignment.itemSummary" :key="item.name" class="bk-solution-item">
+                            <span class="bk-solution-item-color" :style="{ background: item.color || '#94a3b8' }"></span>
+                            <span class="bk-solution-item-name">{{ item.name }}</span>
+                            <span class="bk-solution-item-qty">×{{ item.qty }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alternatives -->
+            <div v-if="multiBoxResult.alternatives.length > 0" class="bk-alternatives">
+                <div class="bk-alternatives-label">Alternatives:</div>
+                <div class="bk-alternatives-list">
+                    <span
+                        v-for="(alt, idx) in multiBoxResult.alternatives"
+                        :key="idx"
+                        class="bk-alternative-chip"
+                    >
+                        {{ alt.numBoxes }} box{{ alt.numBoxes > 1 ? 'es' : '' }}: +{{ alt.costDiffPercent }}%
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Single Box Recommendations (Fallback) -->
         <div class="bk-boxes-section">
             <div class="bk-boxes-header">
-                <span>Box Recommendations</span>
+                <span>Single Box Options</span>
                 <span v-if="hasOverflow" class="bk-overflow-warn">Items don't fit!</span>
             </div>
             <div class="bk-boxes-scroll">
@@ -89,7 +138,7 @@
                     :key="box.id"
                     class="bk-box-card"
                     :class="{
-                        'bk-selected': currentSelectedBox?.id === box.id,
+                        'bk-selected': currentSelectedBox?.id === box.id && !showPerfectFit,
                         'bk-best': box.isBest
                     }"
                     @click="selectBox(box)"
@@ -116,6 +165,7 @@ import { getBoxes } from '../../data/suppliers'
 import { packItems, countOverflow } from '../../utils/packingAlgorithm'
 import { formatPrice, getBoxPrice } from '../../utils/pricingFunctions'
 import { rankBoxes } from '../../utils/boxFitting'
+import { findOptimalBoxing, formatCost } from '../../utils/multiBoxOptimizer'
 
 export default {
     name: 'BoxPickerMain',
@@ -253,6 +303,16 @@ export default {
         closestRealBox() {
             const best = this.rankedBoxes.find(b => b.actuallyFits)
             return best || this.rankedBoxes[0] || null
+        },
+
+        // Multi-box optimizer result
+        multiBoxResult() {
+            if (!this.validItems.length) return null
+
+            return findOptimalBoxing(this.validItems, this.currentBoxes, {
+                padding: this.currentPadding,
+                qtyTier: 25
+            })
         }
     },
 
@@ -328,6 +388,24 @@ export default {
             if (box.fitPercent >= 50) return 'bk-fit-good'
             if (box.fitPercent > 0) return 'bk-fit-ok'
             return 'bk-fit-none'
+        },
+
+        formatOptimalCost(cost) {
+            return formatCost(cost)
+        },
+
+        isAssignmentSelected(assignment) {
+            return this.currentSelectedBox?.id === assignment.box.id
+        },
+
+        selectAssignment(assignment) {
+            this.showPerfectFit = false
+            const box = this.currentBoxes.find(b => b.id === assignment.box.id)
+            if (box) {
+                this.currentSelectedBoxId = box.id
+                this.$emit('update:selectedBox', box.id)
+                this.emitChange()
+            }
         }
     }
 }
@@ -599,6 +677,146 @@ export default {
     padding: 20px;
     color: #475569;
     font-size: 11px;
+}
+
+/* Multi-Box Optimizer */
+.bk-optimizer-section {
+    background: linear-gradient(135deg, #1e3a5f 0%, #1e293b 100%);
+    border: 1px solid #22c55e;
+    border-radius: 10px;
+    padding: 12px;
+}
+
+.bk-optimizer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.bk-optimizer-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #22c55e;
+}
+
+.bk-optimizer-summary {
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+.bk-optimal-solution {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+}
+
+.bk-solution-box {
+    flex-shrink: 0;
+    min-width: 160px;
+    max-width: 200px;
+    background: rgba(34, 197, 94, 0.1);
+    border: 2px solid #334155;
+    border-radius: 8px;
+    padding: 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.bk-solution-box:hover {
+    border-color: #22c55e;
+    background: rgba(34, 197, 94, 0.15);
+}
+
+.bk-solution-box.bk-solution-selected {
+    border-color: #22c55e;
+    background: rgba(34, 197, 94, 0.2);
+}
+
+.bk-solution-box-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.bk-solution-box-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: #f1f5f9;
+}
+
+.bk-solution-box-price {
+    font-size: 11px;
+    font-weight: 600;
+    color: #22c55e;
+}
+
+.bk-solution-box-dims {
+    font-size: 10px;
+    color: #64748b;
+    margin-bottom: 8px;
+}
+
+.bk-solution-items {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.bk-solution-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    color: #94a3b8;
+}
+
+.bk-solution-item-color {
+    width: 6px;
+    height: 6px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.bk-solution-item-name {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bk-solution-item-qty {
+    color: #38bdf8;
+    font-weight: 600;
+}
+
+.bk-alternatives {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #334155;
+}
+
+.bk-alternatives-label {
+    font-size: 10px;
+    color: #64748b;
+}
+
+.bk-alternatives-list {
+    display: flex;
+    gap: 6px;
+}
+
+.bk-alternative-chip {
+    font-size: 9px;
+    padding: 3px 8px;
+    background: #334155;
+    border-radius: 4px;
+    color: #94a3b8;
 }
 
 /* Box Recommendations */
