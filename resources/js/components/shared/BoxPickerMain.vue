@@ -163,7 +163,7 @@ import PaddingControl from './PaddingControl.vue'
 import Visualization3D from './Visualization3D.vue'
 import { getBoxes } from '../../data/suppliers'
 import { packItems, countOverflow } from '../../utils/packingAlgorithm'
-import { formatPrice, getBoxPrice } from '../../utils/pricingFunctions'
+import { formatPrice, getBoxPrice as getBoxPriceFn } from '../../utils/pricingFunctions'
 import { rankBoxes } from '../../utils/boxFitting'
 import { findOptimalBoxing, formatCost } from '../../utils/multiBoxOptimizer'
 
@@ -373,13 +373,13 @@ export default {
         },
 
         getBoxPrice(box) {
-            if (!box?.pricing) return '-'
-            return formatPrice(getBoxPrice(box, 25))
+            if (!box?.prices) return '-'
+            return formatPrice(getBoxPriceFn(box, 25))
         },
 
         formatBoxPrice(box) {
-            if (!box?.pricing) return '-'
-            const price = getBoxPrice(box, 25)
+            if (!box?.prices) return '-'
+            const price = getBoxPriceFn(box, 25)
             return `${Math.round(price / 1000)}K`
         },
 
