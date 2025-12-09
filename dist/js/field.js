@@ -828,7 +828,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     index: $props.index,
     field: $props.field
   }, {
-    "default": (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
+    value: (0,vue__WEBPACK_IMPORTED_MODULE_0__.withCtx)(function () {
       var _$options$value$paddi;
       return [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_1, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_3, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($props.field.name), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_4, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)(_component_BoxPickerMain, {
         items: $options.items,
@@ -1342,7 +1342,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "\n.bk-detail-wrapper[data-v-56f8c4b9] {\n    width: 100%;\n    padding: 16px 0;\n}\n.bk-detail-header[data-v-56f8c4b9] {\n    margin-bottom: 12px;\n}\n.bk-field-label[data-v-56f8c4b9] {\n    font-size: 13px;\n    font-weight: 500;\n    color: var(--colors-gray-500);\n}\n.bk-detail-content[data-v-56f8c4b9] {\n    background: #0f172a;\n    border-radius: 12px;\n    padding: 16px;\n    min-height: 500px;\n}\n[data-v-56f8c4b9] .dark .bk-detail-content {\n    background: #0f172a;\n}\n", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "\n.bk-detail-wrapper[data-v-56f8c4b9] {\n  width: 100%;\n  padding: 16px 0;\n}\n.bk-detail-header[data-v-56f8c4b9] {\n  margin-bottom: 12px;\n}\n.bk-field-label[data-v-56f8c4b9] {\n  font-size: 13px;\n  font-weight: 500;\n  color: var(--colors-gray-500);\n}\n.bk-detail-content[data-v-56f8c4b9] {\n  background: #0f172a;\n  border-radius: 12px;\n  padding: 16px;\n  min-height: 500px;\n}\n[data-v-56f8c4b9] .dark .bk-detail-content {\n  background: #0f172a;\n}\n", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
