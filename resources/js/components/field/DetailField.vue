@@ -1,5 +1,7 @@
 <template>
-    <div class="bk-detail-wrapper">
+  <PanelItem :index="index" :field="field">
+
+  <div class="bk-detail-wrapper">
         <div class="bk-detail-header">
             <span class="bk-field-label">{{ field.name }}</span>
         </div>
@@ -13,6 +15,7 @@
             />
         </div>
     </div>
+  </PanelItem>
 </template>
 
 <script>
