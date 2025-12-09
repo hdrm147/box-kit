@@ -16,9 +16,9 @@
                     :class="{ 'bk-active': showPerfectFit }"
                     @click="togglePerfectFit"
                     type="button"
-                    title="Test with perfect-fit box"
+                    title="Show minimum theoretical box size"
                 >
-                    ⚡
+                    ⚡ Perfect Box
                 </button>
             </div>
         </div>
@@ -247,6 +247,12 @@ export default {
             }))
             const placements = packItems(itemsForPacking, this.currentSelectedBox, this.currentPadding)
             return countOverflow(placements) > 0
+        },
+
+        // Find the closest real box from suppliers that fits
+        closestRealBox() {
+            const best = this.rankedBoxes.find(b => b.actuallyFits)
+            return best || this.rankedBoxes[0] || null
         }
     },
 
@@ -473,12 +479,45 @@ export default {
     color: #fbbf24;
 }
 
-.bk-pf-badge {
-    font-size: 9px;
+/* Perfect Box Note */
+.bk-perfect-note {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    right: 12px;
+    background: rgba(251, 191, 36, 0.1);
+    border: 1px solid rgba(251, 191, 36, 0.4);
+    border-radius: 8px;
+    padding: 12px 14px;
+}
+
+.bk-perfect-note-title {
+    font-size: 11px;
     font-weight: 700;
     color: #fbbf24;
-    margin-bottom: 4px;
-    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+}
+
+.bk-perfect-note-text {
+    font-size: 11px;
+    color: #e2e8f0;
+    line-height: 1.5;
+}
+
+.bk-perfect-note-text strong {
+    color: #fbbf24;
+}
+
+.bk-perfect-note-hint {
+    font-size: 10px;
+    color: #94a3b8;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(251, 191, 36, 0.2);
+}
+
+.bk-perfect-note-hint strong {
+    color: #22c55e;
 }
 
 /* Sidebar */
