@@ -1,0 +1,147 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* BoxKit - Shared Styles */
+
+/* Base reset for inputs */
+.box-kit-field input[type="number"],
+.box-kit-tool input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+.box-kit-field input[type="number"]::-webkit-outer-spin-button,
+.box-kit-field input[type="number"]::-webkit-inner-spin-button,
+.box-kit-tool input[type="number"]::-webkit-outer-spin-button,
+.box-kit-tool input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Custom scrollbar */
+.box-kit-field ::-webkit-scrollbar,
+.box-kit-tool ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.box-kit-field ::-webkit-scrollbar-track,
+.box-kit-tool ::-webkit-scrollbar-track {
+    background: #1e293b;
+    border-radius: 3px;
+}
+
+.box-kit-field ::-webkit-scrollbar-thumb,
+.box-kit-tool ::-webkit-scrollbar-thumb {
+    background: #475569;
+    border-radius: 3px;
+}
+
+.box-kit-field ::-webkit-scrollbar-thumb:hover,
+.box-kit-tool ::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}
+
+/* Loading spinner */
+.box-kit-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+}
+
+.box-kit-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid #334155;
+    border-top-color: #22c55e;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Tooltip styles */
+.box-kit-tooltip {
+    position: absolute;
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 11px;
+    color: #f1f5f9;
+    z-index: 1000;
+    pointer-events: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Status badges */
+.box-kit-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.box-kit-status.success {
+    background: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+}
+
+.box-kit-status.warning {
+    background: rgba(234, 179, 8, 0.2);
+    color: #eab308;
+}
+
+.box-kit-status.error {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+}
+
+/* Animation utilities */
+.box-kit-fade-enter-active,
+.box-kit-fade-leave-active {
+    transition: opacity 0.2s ease;
+}
+
+.box-kit-fade-enter-from,
+.box-kit-fade-leave-to {
+    opacity: 0;
+}
+
+.box-kit-slide-enter-active,
+.box-kit-slide-leave-active {
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.box-kit-slide-enter-from,
+.box-kit-slide-leave-to {
+    transform: translateY(-10px);
+    opacity: 0;
+}
+
+/* Print styles */
+@media print {
+    .box-kit-tool .control-panel,
+    .box-kit-tool .export-buttons {
+        display: none;
+    }
+
+    .box-kit-tool {
+        background: white;
+        color: black;
+    }
+
+    .box-kit-tool .panel-section {
+        background: white;
+        border: 1px solid #e2e8f0;
+    }
+}
