@@ -1,18 +1,26 @@
 <template>
     <div class="bk-picker">
-        <!-- Top Bar: Supplier + Items Summary -->
+        <!-- Top Bar: Supplier + Controls -->
         <div class="bk-top-bar">
             <SupplierSelector v-model="currentSupplier" class="bk-supplier" />
-            <div class="bk-items-summary">
-                <span class="bk-items-label">Items:</span>
-                <span class="bk-items-count" :class="{ 'bk-warning': invalidItems.length > 0 }">
-                    {{ validItems.length }}/{{ items.length }}
-                </span>
-                <span v-if="invalidItems.length > 0" class="bk-items-warn">
-                    ({{ invalidItems.length }} missing dims)
-                </span>
+            <div class="bk-controls-right">
+                <div class="bk-items-summary">
+                    <span class="bk-items-label">Items:</span>
+                    <span class="bk-items-count" :class="{ 'bk-warning': invalidItems.length > 0 }">
+                        {{ validItems.length }}/{{ items.length }}
+                    </span>
+                </div>
+                <PaddingControl v-model="currentPadding" class="bk-padding" />
+                <button
+                    class="bk-perfect-fit-btn"
+                    :class="{ 'bk-active': showPerfectFit }"
+                    @click="togglePerfectFit"
+                    type="button"
+                    title="Test with perfect-fit box"
+                >
+                    ⚡
+                </button>
             </div>
-            <PaddingControl v-model="currentPadding" class="bk-padding" />
         </div>
 
         <!-- Main Content: Preview + Box List -->
@@ -25,10 +33,12 @@
                     :padding="currentPadding"
                 />
                 <!-- Selected Box Info Overlay -->
-                <div v-if="currentSelectedBox" class="bk-selected-info">
+                <div v-if="currentSelectedBox" class="bk-selected-info" :class="{ 'bk-perfect-fit-info': showPerfectFit }">
+                    <div v-if="showPerfectFit" class="bk-pf-badge">⚡ TEST MODE</div>
                     <div class="bk-selected-name">{{ currentSelectedBox.name }}</div>
                     <div class="bk-selected-dims">{{ currentSelectedBox.w }}×{{ currentSelectedBox.d }}×{{ currentSelectedBox.h }} cm</div>
-                    <div class="bk-selected-price">{{ getBoxPrice(currentSelectedBox) }} IQD/25</div>
+                    <div class="bk-selected-price" v-if="!showPerfectFit">{{ getBoxPrice(currentSelectedBox) }} IQD/25</div>
+                    <div class="bk-selected-price bk-test-price" v-else>Custom test box</div>
                 </div>
             </div>
 
@@ -119,7 +129,8 @@ export default {
         return {
             currentSupplier: this.selectedSupplier,
             currentPadding: this.padding,
-            currentSelectedBoxId: this.selectedBox
+            currentSelectedBoxId: this.selectedBox,
+            showPerfectFit: false
         }
     },
 
@@ -134,6 +145,51 @@ export default {
 
         currentBoxes() {
             return getBoxes(this.currentSupplier)
+        },
+
+        // Calculate the perfect fit box based on item bounding box
+        perfectFitBox() {
+            if (!this.validItems.length) return null
+
+            // Calculate bounding box dimensions
+            let maxW = 0, maxD = 0, totalH = 0
+            let totalVolume = 0
+
+            this.validItems.forEach(item => {
+                const qty = item.qty || 1
+                const w = parseFloat(item.w)
+                const h = parseFloat(item.h)
+                const d = parseFloat(item.d)
+
+                // Track max footprint
+                maxW = Math.max(maxW, w)
+                maxD = Math.max(maxD, d)
+
+                // Sum heights (stacked) and volume
+                totalH += h * qty
+                totalVolume += w * h * d * qty
+            })
+
+            // Add padding
+            const pad = this.currentPadding * 2
+            const boxW = Math.ceil(maxW + pad)
+            const boxD = Math.ceil(maxD + pad)
+
+            // Calculate height based on items stacked vertically
+            // Use volume-based estimate with some margin
+            const estimatedH = Math.ceil(totalVolume / (maxW * maxD) + pad)
+            const boxH = Math.max(estimatedH, Math.ceil(totalH / 2 + pad))
+
+            return {
+                id: 'perfect-fit',
+                name: `Perfect ${boxW}×${boxD}×${boxH}`,
+                w: boxW,
+                d: boxD,
+                h: boxH,
+                type: boxH <= boxW / 2 ? 'laptop' : 'regular',
+                isPerfectFit: true,
+                prices: null
+            }
         },
 
         rankedBoxes() {
@@ -155,10 +211,21 @@ export default {
         },
 
         currentSelectedBox() {
+            // If perfect fit mode is enabled, return the perfect fit box
+            if (this.showPerfectFit && this.perfectFitBox) {
+                return this.perfectFitBox
+            }
+
             if (!this.currentSelectedBoxId) {
                 const best = this.rankedBoxes.find(b => b.isBest)
                 return best || null
             }
+
+            // Check if it's the perfect fit box
+            if (this.currentSelectedBoxId === 'perfect-fit') {
+                return this.perfectFitBox
+            }
+
             return this.currentBoxes.find(b => b.id === this.currentSelectedBoxId) || null
         },
 
@@ -208,9 +275,17 @@ export default {
         },
 
         selectBox(box) {
+            this.showPerfectFit = false
             this.currentSelectedBoxId = box.id
             this.$emit('update:selectedBox', box.id)
             this.emitChange()
+        },
+
+        togglePerfectFit() {
+            this.showPerfectFit = !this.showPerfectFit
+            if (this.showPerfectFit) {
+                this.currentSelectedBoxId = 'perfect-fit'
+            }
         },
 
         emitChange() {
@@ -260,7 +335,12 @@ export default {
 
 .bk-supplier {
     flex: 1;
-    min-width: 200px;
+}
+
+.bk-controls-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
 .bk-items-summary {
@@ -290,6 +370,37 @@ export default {
 
 .bk-padding {
     min-width: 180px;
+}
+
+/* Perfect Fit Button */
+.bk-perfect-fit-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: #334155;
+    border: 2px solid #475569;
+    border-radius: 6px;
+    color: #94a3b8;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.bk-perfect-fit-btn:hover {
+    background: #475569;
+    color: #e2e8f0;
+}
+
+.bk-perfect-fit-btn.bk-active {
+    background: rgba(251, 191, 36, 0.15);
+    border-color: #fbbf24;
+    color: #fbbf24;
+}
+
+.bk-pf-icon {
+    font-size: 14px;
 }
 
 /* Main Content */
@@ -337,6 +448,27 @@ export default {
     color: #22c55e;
     font-weight: 600;
     margin-top: 4px;
+}
+
+.bk-selected-price.bk-test-price {
+    color: #fbbf24;
+}
+
+/* Perfect Fit Info */
+.bk-selected-info.bk-perfect-fit-info {
+    border-color: #fbbf24;
+}
+
+.bk-selected-info.bk-perfect-fit-info .bk-selected-name {
+    color: #fbbf24;
+}
+
+.bk-pf-badge {
+    font-size: 9px;
+    font-weight: 700;
+    color: #fbbf24;
+    margin-bottom: 4px;
+    letter-spacing: 0.5px;
 }
 
 /* Sidebar */
