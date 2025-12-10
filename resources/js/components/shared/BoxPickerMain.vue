@@ -12,6 +12,24 @@
                 </div>
                 <PaddingControl v-model="currentPadding" class="bk-padding" />
                 <button
+                    class="bk-stock-toggle"
+                    :class="{ 'bk-active': stockFilterEnabled }"
+                    @click="toggleStockFilter"
+                    type="button"
+                    :title="stockFilterEnabled ? 'Showing in-stock only' : 'Showing all boxes'"
+                >
+                    <span class="bk-stock-icon">📦</span>
+                    <span>{{ stockFilterEnabled ? 'In Stock' : 'All' }}</span>
+                </button>
+                <button
+                    class="bk-stock-edit-btn"
+                    @click="showStockEditor = !showStockEditor"
+                    type="button"
+                    title="Edit inventory"
+                >
+                    ⚙️
+                </button>
+                <button
                     class="bk-perfect-fit-btn"
                     :class="{ 'bk-active': showPerfectFit }"
                     @click="togglePerfectFit"
@@ -23,8 +41,15 @@
             </div>
         </div>
 
+        <!-- Stock Editor Modal -->
+        <StockEditor
+            v-if="showStockEditor"
+            @close="showStockEditor = false"
+            @updated="onStockUpdated"
+        />
+
         <!-- Main Content: Preview + Box List -->
-        <div class="bk-main">
+        <div class="bk-main" v-show="!showStockEditor">
             <!-- 3D Preview (Large) -->
             <div class="bk-preview-area">
                 <Visualization3D
@@ -36,7 +61,14 @@
                 <div v-if="currentSelectedBox" class="bk-selected-info" :class="{ 'bk-perfect-fit-info': showPerfectFit }">
                     <div class="bk-selected-name">{{ currentSelectedBox.name }}</div>
                     <div class="bk-selected-dims">{{ currentSelectedBox.w }}×{{ currentSelectedBox.d }}×{{ currentSelectedBox.h }} cm</div>
-                    <div class="bk-selected-price" v-if="!showPerfectFit">{{ getBoxPriceFormatted(currentSelectedBox) }} IQD/25</div>
+                    <div class="bk-selected-meta">
+                        <span class="bk-selected-price" v-if="!showPerfectFit">{{ getBoxPriceFormatted(currentSelectedBox) }} IQD/25</span>
+                        <span
+                            v-if="!showPerfectFit && currentBoxTier"
+                            class="bk-selected-tier"
+                            :style="{ background: currentBoxTier.color }"
+                        >{{ currentBoxTier.name }}</span>
+                    </div>
                 </div>
 
                 <!-- Perfect Box Mode Note -->
@@ -148,11 +180,14 @@
 import SupplierSelector from './SupplierSelector.vue'
 import PaddingControl from './PaddingControl.vue'
 import Visualization3D from './Visualization3D.vue'
+import StockEditor from './StockEditor.vue'
 import { getBoxes } from '../../data/suppliers'
 import { packItems, countOverflow } from '../../utils/packingAlgorithm'
 import { formatPrice, getBoxPrice } from '../../utils/pricingFunctions'
 import { rankBoxes } from '../../utils/boxFitting'
 import { findOptimalBoxing, formatCost } from '../../utils/multiBoxOptimizer'
+import { getStock, getSettings, updateSetting, hasAnyStock } from '../../utils/stockManager'
+import { getBoxTier } from '../../data/courierTiers'
 
 export default {
     name: 'BoxPickerMain',
@@ -160,7 +195,8 @@ export default {
     components: {
         SupplierSelector,
         PaddingControl,
-        Visualization3D
+        Visualization3D,
+        StockEditor
     },
 
     props: {
@@ -177,7 +213,11 @@ export default {
             currentSupplier: this.selectedSupplier,
             currentPadding: this.padding,
             currentSelectedBoxId: this.selectedBox,
-            showPerfectFit: false
+            showPerfectFit: false,
+            showStockEditor: false,
+            stockFilterEnabled: true,
+            stockData: {},
+            stockVersion: 0 // Force reactivity on stock changes
         }
     },
 
@@ -190,8 +230,37 @@ export default {
             return this.items.filter(item => !this.isValidItem(item))
         },
 
-        currentBoxes() {
+        // All boxes from supplier
+        allSupplierBoxes() {
             return getBoxes(this.currentSupplier)
+        },
+
+        // Boxes filtered by stock (if enabled)
+        currentBoxes() {
+            // Trigger reactivity
+            const _ = this.stockVersion
+
+            const allBoxes = this.allSupplierBoxes
+
+            // If no stock configured yet, show all
+            if (!hasAnyStock()) {
+                return allBoxes
+            }
+
+            // If stock filter disabled, show all
+            if (!this.stockFilterEnabled) {
+                return allBoxes
+            }
+
+            // Filter to only in-stock boxes
+            const stock = getStock()
+            return allBoxes.filter(box => (stock.boxes[box.id] || 0) > 0)
+        },
+
+        // Get courier tier for current selected box
+        currentBoxTier() {
+            if (!this.currentSelectedBox || this.showPerfectFit) return null
+            return getBoxTier(this.currentSelectedBox)
         },
 
         // Calculate the perfect fit box based on item bounding box
@@ -393,7 +462,23 @@ export default {
                 this.$emit('update:selectedBox', box.id)
                 this.emitChange()
             }
+        },
+
+        toggleStockFilter() {
+            this.stockFilterEnabled = !this.stockFilterEnabled
+            updateSetting('stockFilterEnabled', this.stockFilterEnabled)
+        },
+
+        onStockUpdated() {
+            // Force reactivity update
+            this.stockVersion++
         }
+    },
+
+    mounted() {
+        // Load settings
+        const settings = getSettings()
+        this.stockFilterEnabled = settings.stockFilterEnabled ?? true
     }
 }
 </script>
@@ -480,6 +565,54 @@ export default {
     color: #fbbf24;
 }
 
+/* Stock Toggle */
+.bk-stock-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: #334155;
+    border: 2px solid #475569;
+    border-radius: 6px;
+    color: #94a3b8;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.bk-stock-toggle:hover {
+    background: #475569;
+    color: #e2e8f0;
+}
+
+.bk-stock-toggle.bk-active {
+    background: rgba(34, 197, 94, 0.15);
+    border-color: #22c55e;
+    color: #22c55e;
+}
+
+.bk-stock-edit-btn {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    background: #334155;
+    border: 2px solid #475569;
+    border-radius: 6px;
+    color: #94a3b8;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.bk-stock-edit-btn:hover {
+    background: #475569;
+    border-color: #64748b;
+}
+
 .bk-pf-icon {
     font-size: 14px;
 }
@@ -533,6 +666,21 @@ export default {
 
 .bk-selected-price.bk-test-price {
     color: #fbbf24;
+}
+
+.bk-selected-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+.bk-selected-tier {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #0f172a;
 }
 
 /* Perfect Fit Info */
